@@ -1,4 +1,4 @@
-name: Build_iOS_Windows_Final
+name: Build_iOS_Raw_App
 on: [workflow_dispatch]
 jobs:
   build:
@@ -9,27 +9,30 @@ jobs:
         with:
           channel: 'stable'
       
-      - name: Force Fix and Prepare
+      - name: Prep and Build
         run: |
-          # 1. 強制生成所有 iOS 必要的「咚咚」(Info.plist 等)
           flutter create --platforms ios .
-          
-          # 2. 自動注入權限
+          # 注入權限
           find ios/Runner -name "Info.plist" -exec sed -i '' '/<dict>/a \
           <key>NSBrightnessUsageDescription</key><string>壓力測試需要</string>\
           <key>UIFileSharingEnabled</key><true/>\
           <key>LSSupportsOpeningDocumentsInPlace</key><true/>' {} +
           
-          # 3. 下載套件
           flutter pub get
+          cd ios
+          pod install --repo-update
+          cd ..
+          # 關鍵：這裡只編譯 .app，不進行簽名，這樣 GitHub 就不會報錯了
+          flutter build ios --release --no-codesign
 
-      - name: Package Raw Source
+      - name: Zip App Bundle
         run: |
-          # 4. 直接把整包專案壓縮，因為 Sideloadly 有時候可以直接跑原始碼
-          zip -r project_source.zip . -x "**.git**" "**.dart_tool**" "**build**"
+          # 把編譯好的檔案打包成 zip
+          cd build/ios/iphoneos
+          zip -r ../../../RunnerApp.zip Runner.app
           
       - name: Upload Result
         uses: actions/upload-artifact@v4
         with:
-          name: ios-ready-source
-          path: project_source.zip
+          name: ios-raw-app
+          path: RunnerApp.zip
