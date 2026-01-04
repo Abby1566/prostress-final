@@ -1,5 +1,5 @@
 name: prostress_benchmark
-description: A hardware performance stress test app.
+description: Professional hardware stress test tool.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
   battery_plus: ^6.0.0
   fl_chart: ^0.69.0
+  wakelock_plus: ^1.2.8
 
 dev_dependencies:
   flutter_test:
