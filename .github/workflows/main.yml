@@ -1,4 +1,4 @@
-name: Build_iOS_NoSign
+name: Build_iOS_Windows_Final
 on: [workflow_dispatch]
 jobs:
   build:
@@ -9,35 +9,27 @@ jobs:
         with:
           channel: 'stable'
       
-      - name: Force Repair and Build
+      - name: Force Fix and Prepare
         run: |
-          # 1. 強制修復目錄
+          # 1. 強制生成所有 iOS 必要的「咚咚」(Info.plist 等)
           flutter create --platforms ios .
           
-          # 2. 自動注入 Info.plist 權限 (那個咚咚)
+          # 2. 自動注入權限
           find ios/Runner -name "Info.plist" -exec sed -i '' '/<dict>/a \
           <key>NSBrightnessUsageDescription</key><string>壓力測試需要</string>\
           <key>UIFileSharingEnabled</key><true/>\
           <key>LSSupportsOpeningDocumentsInPlace</key><true/>' {} +
           
-          # 3. 安裝依賴
+          # 3. 下載套件
           flutter pub get
-          cd ios
-          pod install --repo-update
-          cd ..
 
-          # 4. 【核心改動】使用 --simulator 編譯，這樣就不需要開發者帳號也能產生檔案
-          flutter build ios --debug --simulator
-
-      - name: Create IPA for Sideload
+      - name: Package Raw Source
         run: |
-          # 5. 把編譯出來的內容打包成 Sideloadly 認識的格式
-          mkdir -p Payload
-          cp -r build/ios/iphonesimulator/Runner.app Payload/
-          zip -r Runner.ipa Payload
+          # 4. 直接把整包專案壓縮，因為 Sideloadly 有時候可以直接跑原始碼
+          zip -r project_source.zip . -x "**.git**" "**.dart_tool**" "**build**"
           
       - name: Upload Result
         uses: actions/upload-artifact@v4
         with:
-          name: ios-ready-to-install
-          path: Runner.ipa
+          name: ios-ready-source
+          path: project_source.zip
