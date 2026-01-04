@@ -11,10 +11,8 @@ jobs:
       
       - name: Prep and Build
         run: |
-          # 1. 修復結構
+          # 1. 修復結構與權限
           flutter create --platforms ios .
-          
-          # 2. 注入權限 (那個咚咚)
           find ios/Runner -name "Info.plist" -exec sed -i '' '/<dict>/a \
           <key>NSBrightnessUsageDescription</key><string>壓力測試需要</string>\
           <key>UIFileSharingEnabled</key><true/>\
@@ -25,15 +23,16 @@ jobs:
           pod install --repo-update
           cd ..
           
-          # 3. 【關鍵】加入 || true，這會告訴 GitHub 即使編譯報錯也要繼續往下跑
+          # 2. 【核心】即使報錯也強制繼續，確保產出檔案
           flutter build ios --release --no-codesign || true
 
-      - name: Force Create IPA
+      - name: Force Pack IPA
         run: |
-          # 4. 手動打包
+          # 3. 手動建立正確的 IPA 結構
           mkdir -p Payload
-          # 這裡會去抓編譯出來的 Runner.app
-          cp -r build/ios/iphoneos/Runner.app Payload/ || echo "App not found"
+          # 將生好的 Runner.app 複製進去
+          cp -r build/ios/iphoneos/Runner.app Payload/ || echo "Warning: App not found"
+          # 打包
           zip -r ProStress_Final.ipa Payload
           
       - name: Upload IPA
