@@ -1,4 +1,4 @@
-name: Build_iOS_IPA_Final
+name: Build_iOS_Debug_IPA
 on: [workflow_dispatch]
 jobs:
   build:
@@ -9,34 +9,31 @@ jobs:
         with:
           channel: 'stable'
       
-      - name: Prep and Build
+      - name: Preparation
         run: |
-          # 1. 修復結構與權限
           flutter create --platforms ios .
           find ios/Runner -name "Info.plist" -exec sed -i '' '/<dict>/a \
           <key>NSBrightnessUsageDescription</key><string>壓力測試需要</string>\
           <key>UIFileSharingEnabled</key><true/>\
           <key>LSSupportsOpeningDocumentsInPlace</key><true/>' {} +
-          
           flutter pub get
-          cd ios
-          pod install --repo-update
-          cd ..
-          
-          # 2. 【核心】即使報錯也強制繼續，確保產出檔案
-          flutter build ios --release --no-codesign || true
+          cd ios && pod install --repo-update && cd ..
+
+      - name: Build Debug App
+        run: |
+          # 使用 debug 模式編譯，這在雲端機器上不需要簽名也能成功產出檔案
+          flutter build ios --debug --no-codesign
 
       - name: Force Pack IPA
         run: |
-          # 3. 手動建立正確的 IPA 結構
           mkdir -p Payload
-          # 將生好的 Runner.app 複製進去
-          cp -r build/ios/iphoneos/Runner.app Payload/ || echo "Warning: App not found"
-          # 打包
-          zip -r ProStress_Final.ipa Payload
+          # Debug 模式的檔案路徑在 iphoneos 或 iphonesimulator 之下
+          # 我們強制抓取生成的 .app
+          cp -r build/ios/iphoneos/Runner.app Payload/ || cp -r build/ios/iphonesimulator/Runner.app Payload/
+          zip -r ProStress_Debug.ipa Payload
           
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: ios-ipa-package
-          path: ProStress_Final.ipa
+          name: ios-debug-ipa
+          path: ProStress_Debug.ipa
