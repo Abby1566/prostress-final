@@ -1,6 +1,5 @@
-name: Build iOS
+name: Build_iOS_Final
 on: [workflow_dispatch]
-
 jobs:
   build:
     runs-on: macos-latest
@@ -9,12 +8,17 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-
-      - name: Auto-Inject iOS Permissions # 這是最簡單的「暴力」改法
+      
+      - name: Force Fix iOS Structure
         run: |
-          # 這行會自動在 Info.plist 插入你需要的「咚咚」
+          # 這行會強制生成缺少的 iOS 檔案
+          flutter create --platforms ios . 
+          
+      - name: Inject Permissions
+        run: |
+          # 這裡直接把你要的「咚咚」塞進去，不用手動改檔
           sed -i '' '/<dict>/a \
-          <key>NSBrightnessUsageDescription</key><string>壓測亮度使用</string>\
+          <key>NSBrightnessUsageDescription</key><string>壓力測試需要</string>\
           <key>UIFileSharingEnabled</key><true/>\
           <key>LSSupportsOpeningDocumentsInPlace</key><true/>' ios/Runner/Info.plist
 
@@ -23,5 +27,5 @@ jobs:
           cd ios
           pod install
 
-      - name: Build
+      - name: Build App
         run: flutter build ios --release --no-codesign
