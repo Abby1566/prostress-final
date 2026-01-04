@@ -1,4 +1,4 @@
-name: Build_iOS_Final_Success
+name: Build_iOS_NoSign
 on: [workflow_dispatch]
 jobs:
   build:
@@ -9,9 +9,9 @@ jobs:
         with:
           channel: 'stable'
       
-      - name: Force Fix and Build
+      - name: Force Repair and Build
         run: |
-          # 1. 強制修復 iOS 結構
+          # 1. 強制修復目錄
           flutter create --platforms ios .
           
           # 2. 自動注入 Info.plist 權限 (那個咚咚)
@@ -26,17 +26,17 @@ jobs:
           pod install --repo-update
           cd ..
 
-          # 4. 【關鍵改動】只編譯不簽名，生成 .app 檔案
-          flutter build ios --release --no-codesign
+          # 4. 【核心改動】使用 --simulator 編譯，這樣就不需要開發者帳號也能產生檔案
+          flutter build ios --debug --simulator
 
-      - name: Manual Zip to IPA
+      - name: Create IPA for Sideload
         run: |
-          # 5. 手動模擬 IPA 結構，這樣 Sideloadly 才能讀取
+          # 5. 把編譯出來的內容打包成 Sideloadly 認識的格式
           mkdir -p Payload
-          cp -r build/ios/iphoneos/*.app Payload/
+          cp -r build/ios/iphonesimulator/Runner.app Payload/
           zip -r Runner.ipa Payload
           
-      - name: Upload Artifact
+      - name: Upload Result
         uses: actions/upload-artifact@v4
         with:
           name: ios-ready-to-install
