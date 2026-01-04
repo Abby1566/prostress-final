@@ -1,0 +1,34 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Auto-Generate iOS Files
+        run: |
+          # 徹底清理並重新生成 iOS 專案結構，確保不會遺漏零件
+          rm -rf ios
+          flutter create . --platforms=ios --org com.stress.benchmark
+          
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build IPA
+        run: flutter build ipa --release --no-codesign
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Benchmark-App-IPA
+          path: build/ios/ipa/*.ipa
