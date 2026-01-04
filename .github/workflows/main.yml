@@ -1,4 +1,4 @@
-name: Build_iOS_Universal
+name: Build_iOS_Final_Success
 on: [workflow_dispatch]
 jobs:
   build:
@@ -9,37 +9,35 @@ jobs:
         with:
           channel: 'stable'
       
-      - name: Auto Fix and Inject
+      - name: Force Fix and Build
         run: |
           # 1. 強制修復 iOS 結構
           flutter create --platforms ios .
           
-          # 2. 自動抓取 pubspec.yaml 裡的名稱，避免名稱不符
-          APP_NAME=$(grep '^name:' pubspec.yaml | awk '{print $2}')
-          echo "偵測到專案名稱為: $APP_NAME"
-          
-          # 3. 自動注入「那個咚咚」(Info.plist 權限)
-          # 無論你的專案叫什麼，這行都能準確找到 Info.plist
+          # 2. 自動注入 Info.plist 權限 (那個咚咚)
           find ios/Runner -name "Info.plist" -exec sed -i '' '/<dict>/a \
           <key>NSBrightnessUsageDescription</key><string>壓力測試需要</string>\
           <key>UIFileSharingEnabled</key><true/>\
           <key>LSSupportsOpeningDocumentsInPlace</key><true/>' {} +
           
-          # 4. 開始編譯
+          # 3. 安裝依賴
           flutter pub get
           cd ios
           pod install --repo-update
           cd ..
+
+          # 4. 【關鍵改動】只編譯不簽名，生成 .app 檔案
           flutter build ios --release --no-codesign
 
-      - name: Package to IPA
+      - name: Manual Zip to IPA
         run: |
-          mkdir -p payload/Payload
-          cp -r build/ios/iphoneos/*.app payload/Payload/
-          cd payload && zip -r ../Runner.ipa Payload
+          # 5. 手動模擬 IPA 結構，這樣 Sideloadly 才能讀取
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/*.app Payload/
+          zip -r Runner.ipa Payload
           
-      - name: Upload Result
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ios-app-bundle
+          name: ios-ready-to-install
           path: Runner.ipa
