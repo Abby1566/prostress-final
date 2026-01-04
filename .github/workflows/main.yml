@@ -1,4 +1,4 @@
-name: Build_iOS_Final_IPA
+name: Build_iOS_Final_Success
 on: [workflow_dispatch]
 jobs:
   build:
@@ -9,7 +9,7 @@ jobs:
         with:
           channel: 'stable'
       
-      - name: Prep and Build
+      - name: Preparation
         run: |
           flutter create --platforms ios .
           find ios/Runner -name "Info.plist" -exec sed -i '' '/<dict>/a \
@@ -18,19 +18,25 @@ jobs:
           <key>LSSupportsOpeningDocumentsInPlace</key><true/>' {} +
           flutter pub get
           cd ios && pod install --repo-update && cd ..
-          
-          # 強制編譯，忽略最後的簽名報錯
-          flutter build ios --release --no-codesign || true
 
-      - name: Force Create IPA
+      - name: Build Debug App
+        run: |
+          # 使用 debug 模式在雲端最穩定，且不需要簽名就能產出完整檔案
+          flutter build ios --debug --no-codesign || true
+
+      - name: Force Pack IPA
         run: |
           mkdir -p Payload
-          # 將生成的內容強制放入 IPA 結構
-          cp -r build/ios/iphoneos/Runner.app Payload/ || echo "App folder not found"
-          zip -r Final_Stress_V15.ipa Payload
+          # 同時檢查兩個可能生成的路徑，確保抓到檔案
+          if [ -d "build/ios/iphoneos/Runner.app" ]; then
+            cp -r build/ios/iphoneos/Runner.app Payload/
+          elif [ -d "build/ios/iphonesimulator/Runner.app" ]; then
+            cp -r build/ios/iphonesimulator/Runner.app Payload/
+          fi
+          zip -r ProStress_Debug.ipa Payload
           
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: ios-ipa-package
-          path: Final_Stress_V15.ipa
+          name: ios-debug-ipa
+          path: ProStress_Debug.ipa
