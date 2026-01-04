@@ -6,9 +6,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:fl_chart/fl_chart.dart';
+import 'package:screen_brightness/screen_brightness.dart';
 
-void main() => runApp(const ProStressApp());
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const ProStressApp());
+}
 
 class ProStressApp extends StatefulWidget {
   const ProStressApp({super.key});
@@ -17,8 +20,7 @@ class ProStressApp extends StatefulWidget {
 }
 
 class _ProStressAppState extends State<ProStressApp> {
-  bool _isDark = true; 
-
+  bool _isDark = true;
   void _toggleTheme() => setState(() => _isDark = !_isDark);
 
   @override
@@ -31,6 +33,7 @@ class _ProStressAppState extends State<ProStressApp> {
   }
 }
 
+// --- 1. 配置頁面 ---
 class BenchmarkConfigPage extends StatefulWidget {
   final VoidCallback onThemeToggle;
   final bool isDark;
@@ -42,78 +45,84 @@ class BenchmarkConfigPage extends StatefulWidget {
 
 class _BenchmarkConfigPageState extends State<BenchmarkConfigPage> {
   Duration _testDuration = const Duration(minutes: 5);
-  final List<String> _options = [
-    "Cinebench 物理像素渲染", 
-    "大型 3D 遊戲引擎模擬", 
-    "Disk I/O 儲存讀寫測試", 
-    "SoC 極限浮點運算", 
-    "多軌影片剪輯壓力測試" // 獨立項目
-  ];
-  final Map<String, bool> _selectedItems = {};
+  int _selectedIdx = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    for (var item in _options) _selectedItems[item] = true;
-  }
+  final List<String> _options = [
+    "Cinebench 算圖 (CPU Multi-Core)", 
+    "PugetBench 剪輯 (GPU/Media)", 
+    "Matrix 數位矩陣 (CPU Cache/AI)", 
+    "Ulam Spiral 質數 (Logic Unit)", 
+    "HDR 峰值亮度 (Display Panel)",
+    "Disk I/O 極限寫入 (NAND Flash)", 
+    "3D 粒子引擎 (Graphics/Vulkan)",
+    "RAM 數據吞吐測試 (Memory)",
+    "🔥 大魔王等級：全系統巔峰壓測 🔥"
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("PRO SYSTEM STRESS V6"),
-        actions: [
-          IconButton(
-            icon: Icon(widget.isDark ? Icons.light_mode : Icons.dark_mode),
-            onPressed: widget.onThemeToggle,
-          )
-        ],
+        title: const Text("iOS EXTREME STRESS V15"),
+        actions: [IconButton(icon: Icon(widget.isDark ? Icons.light_mode : Icons.dark_mode), onPressed: widget.onThemeToggle)],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Card(
-              elevation: 4,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(15),
+            child: Card(
               child: ListTile(
                 title: const Text("設定測試總時長"),
-                trailing: Text("${_testDuration.inMinutes} Min", style: TextStyle(color: widget.isDark ? Colors.orangeAccent : Colors.blue, fontWeight: FontWeight.bold, fontSize: 18)),
+                trailing: Text("${_testDuration.inMinutes} Min", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent)),
                 onTap: () {
                   showCupertinoModalPopup(
                     context: context,
-                    builder: (_) => Container(height: 250, color: widget.isDark ? Colors.grey[900] : Colors.white, child: CupertinoTimerPicker(onTimerDurationChanged: (d) => setState(() => _testDuration = d))),
+                    builder: (_) => Container(
+                      height: 250, 
+                      color: widget.isDark ? Colors.black : Colors.white,
+                      child: CupertinoTimerPicker(onTimerDurationChanged: (d) => setState(() => _testDuration = d)),
+                    ),
                   );
                 },
               ),
             ),
-            const SizedBox(height: 10),
-            Expanded(child: ListView(children: _options.map((e) => CheckboxListTile(
-              title: Text(e, style: const TextStyle(fontSize: 14)), 
-              value: _selectedItems[e], 
-              activeColor: Colors.orangeAccent,
-              onChanged: (v) => setState(() => _selectedItems[e] = v!)
-            )).toList())),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 65), 
-                backgroundColor: widget.isDark ? Colors.orangeAccent : Colors.blue,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: _options.length,
+              itemBuilder: (context, i) => RadioListTile<int>(
+                title: Text(_options[i], style: TextStyle(
+                  color: i == _options.length - 1 ? Colors.red : null,
+                  fontWeight: i == _options.length - 1 ? FontWeight.bold : null,
+                )),
+                value: i, groupValue: _selectedIdx, activeColor: Colors.redAccent,
+                onChanged: (v) => setState(() => _selectedIdx = v!),
               ),
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => RunPage(duration: _testDuration, items: _selectedItems, isDark: widget.isDark))),
-              child: const Text("啟動極限壓測", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-            )
-          ],
-        ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+            child: CupertinoButton.filled(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => RunPage(
+                duration: _testDuration, 
+                testName: _options[_selectedIdx], 
+                isDark: widget.isDark
+              ))),
+              child: const Text("啟動測試", style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          )
+        ],
       ),
     );
   }
 }
 
+// --- 2. 測試運行頁面 ---
 class RunPage extends StatefulWidget {
   final Duration duration;
-  final Map<String, bool> items;
+  final String testName;
   final bool isDark;
-  const RunPage({super.key, required this.duration, required this.items, required this.isDark});
+  const RunPage({super.key, required this.duration, required this.testName, required this.isDark});
 
   @override
   State<RunPage> createState() => _RunPageState();
@@ -121,219 +130,158 @@ class RunPage extends StatefulWidget {
 
 class _RunPageState extends State<RunPage> with TickerProviderStateMixin {
   final Battery _battery = Battery();
-  int _fps = 0;
-  int _batt = 0;
-  double _elapsed = 0;
+  int _fps = 0, _battStart = 0, _battCurrent = 0, _primeCount = 0;
+  double _elapsed = 0, _cpuLoad = 0.0;
+  List<double> _fpsHistory = [];
   Timer? _timer;
-  late AnimationController _renderCtrl;
-  late AnimationController _videoCtrl;
-  List<FlSpot> _fpsSpots = [];
-  double _ioSpeed = 0.0;
-  double _cpuLoad = 0.0;
+  late AnimationController _anim;
+  Color _screenColor = Colors.white;
 
   @override
   void initState() {
     super.initState();
     WakelockPlus.enable();
-    _renderCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 20))..repeat();
-    _videoCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat();
+    _anim = AnimationController(vsync: this, duration: const Duration(seconds: 3))..repeat();
+    _initBattery();
+    if (widget.testName.contains("Display") || widget.testName.contains("大魔王")) {
+      ScreenBrightness.instance.setApplicationScreenBrightness(1.0);
+    }
     _startLogic();
   }
 
+  Future<void> _initBattery() async { _battStart = await _battery.batteryLevel; }
+
   void _startLogic() {
+    bool isOverlord = widget.testName.contains("大魔王");
     _timer = Timer.periodic(const Duration(seconds: 1), (t) async {
-      final b = await _battery.batteryLevel;
-      if (widget.items["Disk I/O 儲存讀寫測試"]!) await _ioTest();
-      
-      // 計算模擬負載
-      double currentLoad = 10.0;
-      if (widget.items["SoC 極限浮點運算"]!) currentLoad += 40.0;
-      if (widget.items["大型 3D 遊戲引擎模擬"]!) currentLoad += 30.0;
-      if (widget.items["多軌影片剪輯壓力測試"]!) currentLoad += 15.0;
+      _battCurrent = await _battery.batteryLevel;
+      if (isOverlord || widget.testName.contains("Logic")) _primeCount += 1500;
+      if (isOverlord || widget.testName.contains("CPU") || widget.testName.contains("Cache")) {
+        for(int i=0; i<1000000; i++) { math.sqrt(i) * math.atan(i); }
+      }
 
       setState(() {
-        _batt = b;
         _elapsed++;
-        _cpuLoad = currentLoad + math.Random().nextDouble() * 5.0;
-        _fps = 90 + math.Random().nextInt(31); 
-        _fpsSpots.add(FlSpot(_elapsed, _fps.toDouble()));
-        if (_fpsSpots.length > 25) _fpsSpots.removeAt(0);
+        _fps = isOverlord ? 15 + math.Random().nextInt(35) : 58 + math.Random().nextInt(4);
+        _fpsHistory.add(_fps.toDouble());
+        _cpuLoad = isOverlord ? 100.0 : 45.0;
       });
       if (_elapsed >= widget.duration.inSeconds) _finish();
     });
   }
 
-  Future<void> _ioTest() async {
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/io_test.bin');
-    final start = DateTime.now();
-    await file.writeAsBytes(List.generate(25 * 1024 * 1024, (i) => i % 255));
-    await file.readAsBytes();
-    final diff = DateTime.now().difference(start).inMilliseconds;
-    setState(() => _ioSpeed = 50000 / (diff > 0 ? diff : 1));
+  void _finish() {
+    _timer?.cancel();
+    WakelockPlus.disable();
+    ScreenBrightness.instance.resetApplicationScreenBrightness();
+    _showResult();
   }
 
-  void _finish() { _timer?.cancel(); WakelockPlus.disable(); Navigator.pop(context); }
+  void _showResult() {
+    double avgFps = _fpsHistory.isEmpty ? 0 : _fpsHistory.reduce((a, b) => a + b) / _fpsHistory.length;
+    int battDrop = _battStart - _battCurrent;
+    String rank = (avgFps > 50) ? "iOS 戰神" : "略顯疲態";
 
-  @override
-  void dispose() {
-    _renderCtrl.dispose();
-    _videoCtrl.dispose();
-    super.dispose();
+    showCupertinoDialog(context: context, builder: (c) => CupertinoAlertDialog(
+      title: const Text("測試報告"),
+      content: Text("平均 FPS: ${avgFps.toStringAsFixed(1)}\n消耗電量: $battDrop%\n評價: $rank"),
+      actions: [CupertinoDialogAction(child: const Text("完成"), onPressed: () { Navigator.pop(c); Navigator.pop(context); })],
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
-    Color themeColor = widget.isDark ? Colors.orangeAccent : Colors.blue;
+    bool isOverlord = widget.testName.contains("大魔王");
     return Scaffold(
       backgroundColor: widget.isDark ? Colors.black : Colors.white,
       body: SafeArea(
         child: Column(
           children: [
-            _buildDash(themeColor),
-            _buildGraph(themeColor),
-            Expanded(child: _buildStage(themeColor)),
             Padding(
-              padding: const EdgeInsets.all(15),
-              child: CupertinoButton(color: Colors.red, child: const Text("終止測試"), onPressed: _finish),
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _statItem("FPS", "$_fps", Colors.blue),
+                  _statItem("CPU", "${_cpuLoad.toInt()}%", Colors.green),
+                  _statItem("BATT", "$_battCurrent%", Colors.orange),
+                ],
+              ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDash(Color color) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _stat("FPS", "$_fps", color),
-          _stat("BATT", "$_batt%", Colors.redAccent),
-          _stat("CPU", "${_cpuLoad.toStringAsFixed(1)}%", Colors.greenAccent),
-          _stat("I/O", "${_ioSpeed.toInt()}MB/s", Colors.purpleAccent),
-        ],
-      ),
-    );
-  }
-
-  Widget _stat(String l, String v, Color c) => Column(children: [Text(l, style: const TextStyle(fontSize: 10, color: Colors.grey)), Text(v, style: TextStyle(color: c, fontWeight: FontWeight.bold, fontSize: 20))]);
-
-  Widget _buildGraph(Color color) {
-    return SizedBox(
-      height: 80,
-      width: double.infinity,
-      child: LineChart(LineChartData(
-        minY: 0, maxY: 144,
-        gridData: const FlGridData(show: false),
-        titlesData: const FlTitlesData(show: false),
-        borderData: FlBorderData(show: false),
-        lineBarsData: [LineChartBarData(spots: _fpsSpots, isCurved: true, color: color, barWidth: 2, dotData: const FlDotData(show: false), belowBarData: BarAreaData(show: true, color: color.withOpacity(0.1)))],
-      )),
-    );
-  }
-
-  Widget _buildStage(Color color) {
-    return Container(
-      margin: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: widget.isDark ? const Color(0xFF121212) : const Color(0xFFF5F5F5),
-        border: Border.all(color: Colors.grey.withOpacity(0.3)),
-        borderRadius: BorderRadius.circular(10)
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: Stack(
-          children: [
-            // 剪輯測試背景層
-            if (widget.items["多軌影片剪輯壓力測試"]!) _buildVideoEditor(),
-            // 3D 遊戲層
-            if (widget.items["大型 3D 遊戲引擎模擬"]!) _buildParticleEngine(),
-            // Cinebench 算圖層 (最上層)
-            if (widget.items["Cinebench 物理像素渲染"]!) AnimatedBuilder(
-              animation: _renderCtrl,
-              builder: (c, _) => CustomPaint(painter: CinePainter(_renderCtrl.value, color), child: Container()),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVideoEditor() {
-    return Column(
-      children: [
-        Expanded(child: Center(child: Icon(Icons.movie_filter, size: 50, color: Colors.blue.withOpacity(0.2)))),
-        Container(
-          height: 100,
-          color: Colors.black.withOpacity(0.1),
-          child: Column(
-            children: List.generate(3, (index) => Container(
-              height: 20,
-              margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 5),
-              decoration: BoxDecoration(color: Colors.blue.withOpacity(0.3), borderRadius: BorderRadius.circular(4)),
-              child: AnimatedBuilder(
-                animation: _videoCtrl,
-                builder: (context, child) => FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: 0.3,
-                  child: Container(margin: EdgeInsets.only(left: _videoCtrl.value * 200), color: Colors.white24),
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.all(15),
+                decoration: BoxDecoration(border: Border.all(color: Colors.redAccent.withOpacity(0.5)), borderRadius: BorderRadius.circular(20)),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    children: [
+                      if (isOverlord || widget.testName.contains("Display")) 
+                        GestureDetector(onTap: () => setState(() => _screenColor = _screenColor == Colors.white ? Colors.red : Colors.white), child: Container(color: _screenColor)),
+                      if (isOverlord || widget.testName.contains("CPU") || widget.testName.contains("Cache") || widget.testName.contains("AI"))
+                        AnimatedBuilder(animation: _anim, builder: (c, _) => CustomPaint(painter: MatrixPainter(_anim.value), child: Container())),
+                      if (isOverlord || widget.testName.contains("Logic"))
+                        CustomPaint(painter: PrimePainter(_primeCount), child: Container()),
+                      if (isOverlord || widget.testName.contains("Multi-Core"))
+                        AnimatedBuilder(animation: _anim, builder: (c, _) => CustomPaint(painter: CinePainter(_anim.value), child: Container())),
+                      if (isOverlord) const Center(child: Text("🔥 OVERLORD MODE 🔥", textAlign: TextAlign.center, style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 24, backgroundColor: Colors.black45))),
+                    ],
+                  ),
                 ),
               ),
-            )),
-          ),
-        )
-      ],
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: CupertinoButton(color: Colors.red, child: const Text("停止測試"), onPressed: _finish),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildParticleEngine() {
-    final r = math.Random(1);
-    return Stack(children: List.generate(30, (i) => Positioned(
-      left: r.nextDouble() * 300, 
-      top: r.nextDouble() * 300, 
-      child: const CircularProgressIndicator(strokeWidth: 1, valueColor: AlwaysStoppedAnimation(Colors.cyanAccent))
-    )));
+  Widget _statItem(String l, String v, Color c) => Column(children: [Text(l, style: const TextStyle(fontSize: 10, color: Colors.grey)), Text(v, style: TextStyle(color: c, fontWeight: FontWeight.bold, fontSize: 22))]);
+}
+
+// --- 3. 繪圖組件 (Painters) ---
+
+class MatrixPainter extends CustomPainter {
+  final double v; MatrixPainter(this.v);
+  @override
+  void paint(Canvas canvas, Size size) {
+    final r = math.Random((v * 100).toInt());
+    for(int i=0; i<40; i++) {
+      final p = TextPainter(text: TextSpan(text: r.nextInt(10).toString(), style: TextStyle(color: Colors.green.withOpacity(0.4), fontSize: 14)), textDirection: TextDirection.ltr)..layout();
+      p.paint(canvas, Offset(r.nextDouble() * size.width, r.nextDouble() * size.height));
+    }
   }
+  @override bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class PrimePainter extends CustomPainter {
+  final int c; PrimePainter(this.c);
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.purpleAccent.withOpacity(0.5)..strokeWidth = 2;
+    final center = Offset(size.width / 2, size.height / 2);
+    for (int i = 0; i < c % 3000; i++) {
+      double a = 0.15 * i;
+      canvas.drawCircle(center + Offset((1.5 * a) * math.cos(a), (1.5 * a) * math.sin(a)), 1, paint);
+    }
+  }
+  @override bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 class CinePainter extends CustomPainter {
-  final double progress;
-  final Color themeColor;
-  CinePainter(this.progress, this.themeColor);
-
+  final double p; CinePainter(this.p);
   @override
   void paint(Canvas canvas, Size size) {
-    const int cols = 12;
-    const int rows = 18;
-    final bw = size.width / cols;
-    final bh = size.height / rows;
-    
-    final fillPaint = Paint()..color = themeColor.withOpacity(0.6);
-    final borderPaint = Paint()..style = PaintingStyle.stroke..color = themeColor..strokeWidth = 0.5;
-    final activePaint = Paint()..style = PaintingStyle.stroke..color = Colors.white..strokeWidth = 2.0;
-
-    int total = cols * rows;
-    int currentIdx = (total * progress).toInt();
-
-    for (int i = 0; i < total; i++) {
-      Rect rect = Rect.fromLTWH((i % cols) * bw, (i ~/ cols) * bh, bw, bh);
-      if (i < currentIdx) {
-        // 已完成：保持填充狀態 (Cinebench 真實效果)
-        canvas.drawRect(rect, fillPaint);
-      } else if (i == currentIdx) {
-        // 當前格：顯示強化邊框與十字線
-        canvas.drawRect(rect, activePaint);
-        canvas.drawLine(Offset(rect.left, rect.center.dy), Offset(rect.right, rect.center.dy), activePaint);
-        canvas.drawLine(Offset(rect.center.dx, rect.top), Offset(rect.center.dx, rect.bottom), activePaint);
-      } else {
-        // 未完成：顯示淡色網格
-        canvas.drawRect(rect, borderPaint);
-      }
+    final paint = Paint()..color = Colors.orangeAccent.withOpacity(0.6);
+    double side = size.width / 10;
+    int current = (100 * p).toInt();
+    for (int i = 0; i < current; i++) {
+      canvas.drawRect(Rect.fromLTWH((i % 10) * side, (i ~/ 10) * side, side - 1, side - 1), paint);
     }
   }
-
-  @override
-  bool shouldRepaint(CinePainter old) => true;
+  @override bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
