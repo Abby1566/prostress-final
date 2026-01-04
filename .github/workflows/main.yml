@@ -15,20 +15,26 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Auto-Generate iOS Files
+      - name: Initialize iOS Project
         run: |
-          # 徹底清理並重新生成 iOS 專案結構，確保不會遺漏零件
+          # 徹底清理並重新生成標準 iOS 專案結構
           rm -rf ios
-          flutter create . --platforms=ios --org com.stress.benchmark
+          flutter create . --platforms=ios --org com.stress.test
           
       - name: Install dependencies
         run: flutter pub get
 
       - name: Build IPA
-        run: flutter build ipa --release --no-codesign
+        run: |
+          # 編譯不帶簽名的 IPA，這通常會產出在 build/ios/archive 或是 build/ios/ipa
+          flutter build ipa --release --no-codesign
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Benchmark-App-IPA
-          path: build/ios/ipa/*.ipa
+          name: ProStress-Benchmark-Package
+          # 這裡改為搜尋所有可能的路徑，確保你一定拿得到檔案
+          path: |
+            build/ios/ipa/*.ipa
+            build/ios/archive/*.xcarchive
+          if-no-files-found: error
