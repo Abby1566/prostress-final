@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:battery_plus/battery_plus.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 
@@ -23,14 +22,14 @@ class _StressAppState extends State<StressApp> {
   int _mode = 0;
   Timer? _t;
 
-  void _run() {
+  void _run() async {
     if (_isStress) {
       _t?.cancel();
       WakelockPlus.disable();
-      ScreenBrightness.instance.resetApplicationScreenBrightness();
+      await ScreenBrightness().resetApplicationScreenBrightness(); // 修正處
     } else {
       WakelockPlus.enable();
-      if (_mode == 1) ScreenBrightness.instance.setApplicationScreenBrightness(1.0);
+      if (_mode == 1) await ScreenBrightness().setApplicationScreenBrightness(1.0); // 修正處
       _t = Timer.periodic(const Duration(milliseconds: 16), (t) {
         if (_mode == 1) { for(int i=0; i<1000000; i++) { math.sqrt(i); } }
         setState(() => _fps = _mode == 1 ? 25 + math.Random().nextInt(10) : 60);
