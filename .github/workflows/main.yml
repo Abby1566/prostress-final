@@ -11,27 +11,31 @@ jobs:
       
       - name: Preparation and Build
         run: |
+          # 1. 強制修復 iOS 環境
           flutter create --platforms ios .
-          # 自動注入你最在意的「咚咚」(權限)
+          
+          # 2. 自動注入亮度權限 (你最在意的咚咚)
           find ios/Runner -name "Info.plist" -exec sed -i '' '/<dict>/a \
           <key>NSBrightnessUsageDescription</key><string>壓力測試需要</string>\
           <key>UIFileSharingEnabled</key><true/>\
           <key>LSSupportsOpeningDocumentsInPlace</key><true/>' {} +
           
+          # 3. 安裝依賴
           flutter pub get
           cd ios
           pod install --repo-update
           cd ..
-          # 編譯出 Runner.app
+
+          # 4. 只編譯不簽名 (避免報錯)
           flutter build ios --release --no-codesign
 
-      - name: Force Create IPA File
+      - name: Force Pack to IPA
         run: |
-          # 建立一個名為 Payload 的資料夾 (這是 IPA 的標準結構)
+          # 5. 手動建立 IPA 標準結構
           mkdir -p Payload
-          # 把編譯好的 App 複製進去
+          # 將剛剛編譯成功的 Runner.app 複製進來
           cp -r build/ios/iphoneos/Runner.app Payload/
-          # 壓縮成 .ipa 格式
+          # 壓縮成 IPA 檔案
           zip -r ProStress_Final.ipa Payload
           
       - name: Upload IPA Artifact
