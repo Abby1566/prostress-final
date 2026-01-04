@@ -9,23 +9,26 @@ jobs:
         with:
           channel: 'stable'
       
-      - name: Force Fix iOS Structure
+      - name: Force Fix and Build
         run: |
-          # 這行會強制生成缺少的 iOS 檔案
-          flutter create --platforms ios . 
+          # 強制修復 iOS 結構
+          flutter create --platforms ios .
           
-      - name: Inject Permissions
-        run: |
-          # 這裡直接把你要的「咚咚」塞進去，不用手動改檔
+          # 自動注入「那個咚咚」(Info.plist 權限)
           sed -i '' '/<dict>/a \
           <key>NSBrightnessUsageDescription</key><string>壓力測試需要</string>\
           <key>UIFileSharingEnabled</key><true/>\
           <key>LSSupportsOpeningDocumentsInPlace</key><true/>' ios/Runner/Info.plist
-
-      - name: Install Pods
-        run: |
+          
+          flutter pub get
           cd ios
-          pod install
+          pod install --repo-update
+          cd ..
+          # 編譯成 .app (因為我們沒有 Apple 證書，先編譯出內容物)
+          flutter build ios --release --no-codesign
 
-      - name: Build App
-        run: flutter build ios --release --no-codesign
+      - name: Upload Result
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: build/ios/iphoneos/Runner.app
