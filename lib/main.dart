@@ -26,10 +26,12 @@ class _StressAppState extends State<StressApp> {
     if (_isStress) {
       _t?.cancel();
       WakelockPlus.disable();
-      await ScreenBrightness().resetApplicationScreenBrightness(); // 修正處
+      try { await ScreenBrightness().resetApplicationScreenBrightness(); } catch (e) {}
     } else {
       WakelockPlus.enable();
-      if (_mode == 1) await ScreenBrightness().setApplicationScreenBrightness(1.0); // 修正處
+      if (_mode == 1) {
+        try { await ScreenBrightness().setApplicationScreenBrightness(1.0); } catch (e) {}
+      }
       _t = Timer.periodic(const Duration(milliseconds: 16), (t) {
         if (_mode == 1) { for(int i=0; i<1000000; i++) { math.sqrt(i); } }
         setState(() => _fps = _mode == 1 ? 25 + math.Random().nextInt(10) : 60);
