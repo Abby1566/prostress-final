@@ -1,40 +1,27 @@
-name: Build iOS IPA
-
-on:
-  workflow_dispatch:
+name: Build iOS
+on: [workflow_dispatch]
 
 jobs:
   build:
     runs-on: macos-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
-      - name: Initialize iOS Project
+      - name: Auto-Inject iOS Permissions # 這是最簡單的「暴力」改法
         run: |
-          # 徹底清理並重新生成標準 iOS 專案結構
-          rm -rf ios
-          flutter create . --platforms=ios --org com.stress.test
-          
-      - name: Install dependencies
-        run: flutter pub get
+          # 這行會自動在 Info.plist 插入你需要的「咚咚」
+          sed -i '' '/<dict>/a \
+          <key>NSBrightnessUsageDescription</key><string>壓測亮度使用</string>\
+          <key>UIFileSharingEnabled</key><true/>\
+          <key>LSSupportsOpeningDocumentsInPlace</key><true/>' ios/Runner/Info.plist
 
-      - name: Build IPA
+      - name: Install Pods
         run: |
-          # 編譯不帶簽名的 IPA，這通常會產出在 build/ios/archive 或是 build/ios/ipa
-          flutter build ipa --release --no-codesign
+          cd ios
+          pod install
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ProStress-Benchmark-Package
-          # 這裡改為搜尋所有可能的路徑，確保你一定拿得到檔案
-          path: |
-            build/ios/ipa/*.ipa
-            build/ios/archive/*.xcarchive
-          if-no-files-found: error
+      - name: Build
+        run: flutter build ios --release --no-codesign
