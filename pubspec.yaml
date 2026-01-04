@@ -1,35 +1,29 @@
-name: ios_system_stress
-description: "Professional iOS Hardware Stress Tool (V15 Final)"
-publish_to: 'none'
+name: iOS Build Task
+on: [workflow_dispatch, push]
 
-version: 1.0.0+1
+jobs:
+  build:
+    runs-on: macos-latest # 使用 GitHub 提供的 Mac 伺服器
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          
+      - name: Install Dependencies
+        run: flutter pub get
 
-environment:
-  sdk: '>=3.0.0 <4.0.0'
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          # 在雲端執行 Windows 做不到的步驟
+          rm -rf Pods
+          rm -rf Podfile.lock
+          pod install --repo-update 
 
-dependencies:
-  flutter:
-    sdk: flutter
-
-  # 必備：獲取 iOS 電池百分比
-  battery_plus: ^6.1.0
-
-  # 必備：防止測試時 iPhone 進入休眠黑屏
-  wakelock_plus: ^1.2.8
-
-  # 必備：控制 iOS 螢幕峰值亮度 (HDR 測試關鍵)
-  screen_brightness: ^1.0.1
-
-  # 必備：提供 Disk I/O 測試所需的暫存路徑
-  path_provider: ^2.1.3
-
-  # 選配：美化 iOS 圖示
-  cupertino_icons: ^1.0.8
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^4.0.0
-
-flutter:
-  uses-material-design: true
+      - name: Build iOS (No Sign)
+        run: |
+          # 因為沒有 Apple 憑證，我們只能編譯成 .app 資料夾，這可以用來檢查程式碼有沒有錯
+          flutter build ios --no-codesign --release
